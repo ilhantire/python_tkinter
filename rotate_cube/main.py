@@ -1,3 +1,8 @@
+"""
+python tkinter arayüzü ve numpy kütüphanesi ile 3d küp rotasyon denemesi
+ilhan tire, ilhantire@gmail.com
+"""
+
 import tkinter as tk
 import numpy as np
 import math
