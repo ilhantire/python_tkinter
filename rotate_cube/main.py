@@ -1,5 +1,5 @@
 """
-python tkinter arayüzü ve numpy kütüphanesi ile 3d küp rotasyon denemesi
+python3 tkinter arayüzü ve numpy kütüphanesi ile 3d küp rotasyon denemesi
 ilhan tire, ilhantire@gmail.com
 """
 
