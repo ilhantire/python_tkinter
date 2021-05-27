@@ -1,3 +1,9 @@
+"""
+sadece sistem saatini gösterir
+her saniye saati günceller
+ilhantire@gmail.com
+"""
+
 import Tkinter as tk
 import time
 
