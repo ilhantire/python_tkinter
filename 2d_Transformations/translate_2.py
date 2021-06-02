@@ -1,8 +1,56 @@
 """
-python3 tkinter arayüzü 2d translation denemesi
+python3 tkinter 2d homogeneous transformations 
 ilhan tire, ilhantire@gmail.com
 
 https://www.cosc.brocku.ca/Offerings/3P98/course/lectures/2d_3d_xforms/
+
+2d homogeneous transformations
+
+    ### translation: 
+
+    | x' |   | 1  0  dx |   | x |
+    | y' | = | 0  1  dy | * | y | = T(dx, dy) * P
+    | 1  |   | 0  0  1  |   | 1 |
+
+	translation is compositional: 
+
+    T(dx2, dy2)* T(dx1,dy1) * P
+
+          | 1  0  dx2 |   | 1  0  dx1 |  
+        = | 0  1  dy2 | * | 0  1  dy1 | * P
+          | 0  0  1   |   | 0  0  1   |  
+
+          | 1  0  dx1+dx2 |
+        = | 0  1  dy1+dy2 | * P
+          | 0  0     1    |
+
+        = T(dx2+dx2, dy1+dy2) * P
+
+
+    ### scaling: 
+
+    | x' |   | sx   0  0 |   | x |
+    | y' | = |  0  sy  0 | * | y | = S(sx, sy) * P
+    | 1  |   |  0   0  1 |   | 1 |
+
+	scaling is multiplicative: 
+
+    S(sx2, sy2)* S(sx1,sy1) * P
+
+        = ...
+
+          | sx1*sx2     0      0 |
+        = |    0     sy1*sy2   0 | * P = S(sx1*sx2, sy1*sy2) * P
+          |    0        0      1 |
+
+
+    ### rotation: 
+
+    | x' |   | cos A  -sin A  0 |   | x |
+    | y' | = | sin A   cos A  0 | * | y | = R(A) * P
+    | 1  |   |   0       0    1 |   | 1 |
+    
+    rotation is additive: R(A2) * R(A1) * P = R(A1+A2) * P 
 
 """
 
@@ -63,19 +111,16 @@ class App(tk.Frame):
 		super().__init__(master)
 		self.master = master		
 		
-		self.rectPoints = np.array([[-50, 50],
-									[50, 50],
-									[50, -50],
-									[-50, -50]])
+		self.rectPoints = np.array([[-50, 50, 1],
+									[50, 50, 1],
+									[50, -50, 1],
+									[-50, -50, 1]])
 		
 		self.rotationAngle = 0
-		self.translateTargetPoint = np.array([0,0])
-		self.scaleTargetPoint = np.array([[1.0,0.0],[0.0,1.0]])
-		self.rotateTargetPoint = np.array([
-							[math.cos(self.rotationAngle), -math.sin(self.rotationAngle)],				
-							[math.sin(self.rotationAngle), math.cos(self.rotationAngle)]]) 
-	
-		
+		self.translationMatrix = np.identity(3)
+		self.scaleMatrix = np.identity(3)
+		self.rotationMatrix = np.identity(3)
+	  
 		self.initUi()
 		
 	 
@@ -114,13 +159,13 @@ class App(tk.Frame):
 		if self.radio_variable.get() == "0":
 			self.scaleX.configure(from_=-self.canvasWidth,to=self.canvasWidth,resolution=10)			
 			self.scaleY.configure(from_=-self.canvasWidth,to=self.canvasWidth,resolution=10)			
-			self.scaleX.set(self.translateTargetPoint[0])
-			self.scaleY.set(-1*self.translateTargetPoint[1])
+			self.scaleX.set(self.translationMatrix[0,2])
+			self.scaleY.set(-1*self.translationMatrix[1,2])
 		elif self.radio_variable.get() == "1":
 			self.scaleX.configure(from_=1,to=2,resolution=0.2)			
 			self.scaleY.configure(from_=1,to=2,resolution=0.2)						
-			self.scaleX.set(self.scaleTargetPoint[0,0])
-			self.scaleY.set(self.scaleTargetPoint[1,1])			
+			self.scaleX.set(self.scaleMatrix[0,0])
+			self.scaleY.set(self.scaleMatrix[1,1])			
 		elif self.radio_variable.get() == "2":
 			self.scaleX.configure(from_=-2*math.pi,to=2*math.pi,resolution=0.01)			
 			self.scaleY.configure(from_=-2*math.pi,to=2*math.pi,resolution=0.01)			
@@ -142,17 +187,18 @@ class App(tk.Frame):
 	 
 	def setTargetValue(self):
 		if self.radio_variable.get() == "0":			
-			self.translateTargetPoint[0] = self.scaleX.get()
-			self.translateTargetPoint[1] = int(self.scaleY.get()) * -1
+			self.translationMatrix[0,2] = self.scaleX.get()
+			self.translationMatrix[1,2] = int(self.scaleY.get()) * -1
 		elif self.radio_variable.get() == "1":
-			self.scaleTargetPoint[0,0] = self.scaleX.get()
-			self.scaleTargetPoint[1,1] = self.scaleY.get()
+			self.scaleMatrix[0,0] = self.scaleX.get()
+			self.scaleMatrix[1,1] = self.scaleY.get()
 		elif self.radio_variable.get() == "2":
 			self.rotationAngle = self.scaleX.get()
-			self.scaleY.set(self.rotationAngle)		
-			self.rotateTargetPoint = np.array([
-								[math.cos(self.rotationAngle), -math.sin(self.rotationAngle)],				
-								[math.sin(self.rotationAngle), math.cos(self.rotationAngle)]]) 		 
+			self.scaleY.set(self.rotationAngle)	
+			self.rotationMatrix[0,0] = math.cos(self.rotationAngle)
+			self.rotationMatrix[0,1] = -math.sin(self.rotationAngle)
+			self.rotationMatrix[1,0] = math.sin(self.rotationAngle)
+			self.rotationMatrix[1,1] = math.cos(self.rotationAngle)				
 		 
 		    
 	def toLocalCoordinate(self, x, y):
@@ -183,17 +229,17 @@ class App(tk.Frame):
 		self.canvas.create_text(x*2-20, y, justify=tk.LEFT, anchor='nw', text="x", font='Arial 11', fill='#999999')			
 		''' eksen ve gridler son '''
 		
-		scaledPoints = np.matmul(self.scaleTargetPoint, self.rectPoints.T)	
-		translatedPoints = scaledPoints.T + self.translateTargetPoint 	
-		rotatedPoints = np.matmul(self.rotateTargetPoint, translatedPoints.T)	
+		translatedM = np.matmul(self.translationMatrix, self.rectPoints.T)	
+		scaledM = np.matmul(self.scaleMatrix, translatedM)
+		rotatedM = np.matmul(self.rotationMatrix, scaledM)
 				
-		self.rect.setRect(rotatedPoints.T)
+		self.rect.setRect(rotatedM.T)
 		self.rect.draw()		
 	 
 		  
 def main():
 	master = tk.Tk()
-	master.title('Python tkinter 2D Translation')
+	master.title('2d homogeneous transformations')
 	app = App(master=master)
 	app.mainloop()
 	
